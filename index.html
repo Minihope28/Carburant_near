@@ -227,7 +227,8 @@ function smartFetch(url) {
     });
     var idx = 0;
     function tryNext() {
-        if (idx >= attempts.length) return Promise.reject(new Error('API indisponible. Verifiez votre connexion internet.'));
+        if (idx >= attempts.length) return Promise.reject(new Error('API indisponible après ' + idx + ' tentatives. Vérifiez la console Safari.'));
+
         return attempts[idx++]()
             .then(function(r) { if (r.ok) return r; return tryNext(); })
             .catch(function() { return tryNext(); });
