@@ -220,7 +220,7 @@ function fetchWithTimeout(url, ms) {
 /* fetch intelligent : direct -> proxy */
 function smartFetch(url) {
     var attempts = [
-        function() { return fetchWithTimeout(url, 8000); }
+        function() { return fetchWithTimeout(url, 12000); }
     ];
     PROXIES.forEach(function(proxy) {
         attempts.push(function() { return fetchWithTimeout(proxy + encodeURIComponent(url), 10000); });
