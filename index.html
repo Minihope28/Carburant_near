@@ -138,7 +138,11 @@ var APIS = [
     'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records',
     'https://opendatamef.opendatasoft.com/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records'
 ];
-var PROXY = 'https://corsproxy.io/?';
+var PROXIES = [
+  'https://corsproxy.io/?url=',
+  'https://api.allorigins.win/raw?url=',
+  'https://thingproxy.freeboard.io/fetch/'
+];
 var NOMI  = 'https://nominatim.openstreetmap.org/search';
 var R_KM  = 10;
 var REF_SEC = 3600;
@@ -213,16 +217,21 @@ function fetchWithTimeout(url, ms) {
 }
 
 /* fetch intelligent : direct -> proxy */
-function smartFetch(url) {
-    return fetchWithTimeout(url, 8000).then(function(r) {
-        if(r.ok) return r;
-        return fetchWithTimeout(PROXY+encodeURIComponent(url), 10000);
-    }).catch(function() {
-        return fetchWithTimeout(PROXY+encodeURIComponent(url), 10000);
-    }).then(function(r) {
-        if(!r.ok) throw new Error('Erreur '+r.status);
-        return r;
-    });
+async function smartFetch(url) {
+  // 1. Essai direct (sans proxy)
+  try {
+    const r = await fetchWithTimeout(url, 8000);
+    if (r.ok) return r;
+  } catch(e) {}
+
+  // 2. Essai avec chaque proxy en cascade
+  for (const proxy of PROXIES) {
+    try {
+      const r = await fetchWithTimeout(proxy + encodeURIComponent(url), 10000);
+      if (r.ok) return r;
+    } catch(e) {}
+  }
+  throw new Error('API indisponible. Verifiez votre connexion internet.');
 }
 
 /* API carburant avec 4 tentatives (2 URLs x 2 syntaxes geo) */
