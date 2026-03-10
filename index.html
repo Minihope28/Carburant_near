@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>FuelFinder France</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #0f172a; color: #e2e8f0; overflow-x: hidden; padding-bottom: 80px; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+        #map { height: 300px; width: 100%; border-radius: 16px; z-index: 1; }
+        .fuel-btn { transition: all 0.3s ease; }
+        .fuel-btn.active { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+        .station-card { transition: all 0.3s ease; border-left: 3px solid transparent; }
+        .station-card:hover { transform: translateX(5px); border-left-color: #3b82f6; }
+        .price-tag { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .price-tag.expensive { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .price-tag.medium { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #334155; border-radius: 2px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); padding: 16px 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); z-index: 9999; transition: transform 0.3s ease; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="toast" class="toast flex items-center gap-3">
+        <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+        <span id="toastMessage" class="text-sm font-medium">Message</span>
+    </div>
+
+    <header class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
+        <div class="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i class="fas fa-gas-pump text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">FuelFinder</h1>
+                    <p class="text-xs text-gray-400">France • Temps réel</p>
+                </div>
+            </div>
+            <button onclick="refreshData()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors" id="refreshBtn">
+                <i class="fas fa-sync-alt text-gray-300"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-4 pt-24 space-y-6">
+        <section class="glass-card rounded-2xl p-4 space-y-4">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="font-semibold text-sm text-gray-300 uppercase tracking-wider">Localisation</h2>
+                <span class="text-xs text-blue-400 cursor-pointer hover:text-blue-300" onclick="useMyLocation()">
+                    <i class="fas fa-location-arrow mr-1"></i>Ma position
+                </span>
+            </div>
+            <div class="relative">
+                <input type="text" id="addressInput" placeholder="Entrez une adresse en France..." 
+                    class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 pl-12 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder-gray-500">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <button onclick="searchAddress()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                    Rechercher
+                </button>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400 bg-slate-800/30 p-3 rounded-lg">
+                <i class="fas fa-info-circle text-blue-400"></i>
+                <span>Depuis l'étranger ? Tapez une adresse française directement</span>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold text-sm text-gray-300 uppercase tracking-wider">Rayon</h2>
+                <span class="text-blue-400 font-bold" id="radiusValue">10 km</span>
+            </div>
+            <input type="range" id="radiusSlider" min="1" max="50" value="10" class="w-full" oninput="updateRadius(this.value)">
+            <div class="flex justify-between text-xs text-gray-500 mt-2">
+                <span>1 km</span>
+                <span>25 km</span>
+                <span>50 km</span>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-4">
+            <h2 class="font-semibold text-sm text-gray-300 uppercase tracking-wider mb-3">Carburant</h2>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="selectFuel('E10')" class="fuel-btn active bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center" data-fuel="E10">
+                    <div class="text-lg font-bold mb-1">SP95-E10</div>
+                    <div class="text-xs text-gray-400">Sans Plomb 95</div>
+                </button>
+                <button onclick="selectFuel('SP98')" class="fuel-btn bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center" data-fuel="SP98">
+                    <div class="text-lg font-bold mb-1">SP98</div>
+                    <div class="text-xs text-gray-400">Sans Plomb 98</div>
+                </button>
+                <button onclick="selectFuel('Gazole')" class="fuel-btn bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center" data-fuel="Gazole">
+                    <div class="text-lg font-bold mb-1">Diesel</div>
+                    <div class="text-xs text-gray-400">Gazole B7</div>
+                </button>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-4 overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold text-sm text-gray-300 uppercase tracking-wider">Carte</h2>
+                <span class="text-xs text-gray-400" id="stationCount">0 station</span>
+            </div>
+            <div id="map"></div>
+        </section>
+
+        <section class="space-y-3 pb-6">
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-sm text-gray-300 uppercase tracking-wider">Résultats</h2>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-gray-400">Màj: <span id="lastUpdate">--:--</span></span>
+                </div>
+            </div>
+            <div id="stationsList" class="space-y-3">
+                <div class="glass-card rounded-2xl p-8 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-gray-400 text-sm">Chargement...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav px-6 py-3">
+        <div class="max-w-lg mx-auto flex justify-around items-center text-gray-400">
+            <div class="flex flex-col items-center gap-1 text-blue-400">
+                <i class="fas fa-search text-xl"></i>
+                <span class="text-xs">Rechercher</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <i class="fas fa-heart text-xl"></i>
+                <span class="text-xs">Favoris</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <i class="fas fa-cog text-xl"></i>
+                <span class="text-xs">Paramètres</span>
+            </div>
+        </div>
+    </nav>
+
+    <script>
+        const CONFIG = {
+            apiUrl: 'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records',
+            geocodeUrl: 'https://api-adresse.data.gouv.fr/search/',
+            defaultLat: 48.8566,
+            defaultLon: 2.3522,
+            radius: 10,
+            selectedFuel: 'E10'
+        };
+
+        let map, markers = [], stations = [], currentPosition = { lat: CONFIG.defaultLat, lon: CONFIG.defaultLon };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            searchStations(CONFIG.defaultLat, CONFIG.defaultLon);
+        });
+
+        function initMap() {
+            map = L.map('map').setView([CONFIG.defaultLat, CONFIG.defaultLon], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        function updateRadius(value) {
+            CONFIG.radius = value;
+            document.getElementById('radiusValue').textContent = value + ' km';
+        }
+
+        function selectFuel(fuel) {
+            CONFIG.selectedFuel = fuel;
+            document.querySelectorAll('.fuel-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.dataset.fuel === fuel) btn.classList.add('active');
+            });
+            if(currentPosition) searchStations(currentPosition.lat, currentPosition.lon);
+        }
+
+        function useMyLocation() {
+            if (!navigator.geolocation) {
+                showToast('Géolocalisation non supportée', 'error');
+                return;
+            }
+            showToast('Recherche position...', 'info');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    currentPosition = { lat: latitude, lon: longitude };
+                    map.setView([latitude, longitude], 13);
+                    searchStations(latitude, longitude);
+                    showToast('Position trouvée !', 'success');
+                },
+                () => showToast('Position impossible', 'error')
+            );
+        }
+
+        async function searchAddress() {
+            const query = document.getElementById('addressInput').value.trim();
+            if (!query) return showToast('Entrez une adresse', 'error');
+            
+            showToast('Recherche...', 'info');
+            try {
+                const response = await fetch(`${CONFIG.geocodeUrl}?q=${encodeURIComponent(query)}&limit=1`);
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    const [lon, lat] = data.features[0].geometry.coordinates;
+                    currentPosition = { lat, lon };
+                    document.getElementById('addressInput').value = data.features[0].properties.label;
+                    map.setView([lat, lon], 13);
+                    await searchStations(lat, lon);
+                    showToast('Adresse trouvée !', 'success');
+                } else {
+                    showToast('Adresse non trouvée', 'error');
+                }
+            } catch (error) {
+                showToast('Erreur recherche', 'error');
+            }
+        }
+
+        async function searchStations(lat, lon) {
+            document.getElementById('stationsList').innerHTML = '<div class="glass-card rounded-2xl p-8 text-center"><div class="spinner mx-auto mb-4"></div><p class="text-gray-400 text-sm">Chargement...</p></div>';
+            
+            try {
+                const radiusKm = CONFIG.radius;
+                // Requête API avec distance
+                const whereClause = `within_distance(geom, geom'POINT(${lon} ${lat})', ${radiusKm}km)`;
+                const url = `${CONFIG.apiUrl}?where=${encodeURIComponent(whereClause)}&limit=100`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.results) {
+                    processStations(data.results, lat, lon);
+                } else {
+                    throw new Error('Pas de données');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                loadDemoData(lat, lon);
+            }
+        }
+
+        function processStations(results, userLat, userLon) {
+            stations = results.map(record => {
+                const fields = record;
+                
+                // 🔧 CORRECTION 1: Gestion des coordonnées GeoJSON [lon, lat] -> [lat, lon] pour Leaflet
+                let lat, lon;
+                
+                if (fields.geom && fields.geom.geometry && fields.geom.geometry.coordinates) {
+                    // Format GeoJSON standard: [longitude, latitude]
+                    [lon, lat] = fields.geom.geometry.coordinates;
+                } else if (fields.geom && Array.isArray(fields.geom) && fields.geom.length === 2) {
+                    // Au cas où c'est un array simple [lon, lat]
+                    [lon, lat] = fields.geom;
+                } else {
+                    // Fallback sur les champs séparés
+                    lat = parseFloat(fields.latitude);
+                    lon = parseFloat(fields.longitude);
+                }
+                
+                // Vérification que les coordonnées sont valides
+                if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
+                    console.warn('Coordonnées invalides pour la station:', fields);
+                    return null;
+                }
+                
+                // 🔧 CORRECTION: S'assurer que c'est bien des nombres
+                lat = parseFloat(lat);
+                lon = parseFloat(lon);
+                
+                // Extraction du prix selon le carburant
+                let price = null;
+                const fuelFields = {
+                    'E10': ['e10_prix', 'prix_e10', 'sp95_e10_prix'],
+                    'SP98': ['sp98_prix', 'prix_sp98'],
+                    'Gazole': ['gazole_prix', 'prix_gazole', 'diesel_prix']
+                };
+                
+                for (let field of fuelFields[CONFIG.selectedFuel] || []) {
+                    if (fields[field] && !isNaN(parseFloat(fields[field]))) {
+                        price = parseFloat(fields[field]);
+                        break;
+                    }
+                }
+                
+                // Si pas de prix trouvé directement, chercher dans un tableau prix
+                if (!price && fields.prix) {
+                    const prixArray = Array.isArray(fields.prix) ? fields.prix : [fields.prix];
+                    const matchingPrice = prixArray.find(p => 
+                        p.nom?.includes(CONFIG.selectedFuel) || 
+                        p.id?.includes(CONFIG.selectedFuel)
+                    );
+                    if (matchingPrice) price = parseFloat(matchingPrice.valeur);
+                }
+                
+                return {
+                    id: fields.id || Math.random().toString(36),
+                    name: fields.adresse || 'Station',
+                    address: `${fields.adresse || ''}, ${fields.cp || ''} ${fields.ville || ''}`.trim(),
+                    city: fields.ville || '',
+                    brand: fields.enseigne || 'Indépendant',
+                    lat: lat,
+                    lon: lon,
+                    price: price,
+                    fuel: CONFIG.selectedFuel,
+                    distance: calculateDistance(userLat, userLon, lat, lon),
+                    updateTime: fields.date_maj || new Date().toISOString()
+                };
+            }).filter(s => s !== null && s.price > 0).sort((a, b) => a.price - b.price);
+            
+            updateUI();
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 10) / 10;
+        }
+
+        function updateUI() {
+            // Nettoyer les anciens marqueurs
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            
+            // Marqueur utilisateur (position actuelle)
+            const userIcon = L.divIcon({
+                className: 'user-location',
+                html: '<div style="background:#3b82f6;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);position:relative;"><div style="position:absolute;top:-8px;left:-8px;width:32px;height:32px;background:rgba(59,130,246,0.3);border-radius:50%;animation:pulse 2s infinite;"></div></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            L.marker([currentPosition.lat, currentPosition.lon], { icon: userIcon }).addTo(map);
+            
+            // Ajouter les stations sur la carte
+            const cheapestPrice = stations.length > 0 ? stations[0].price : 0;
+            
+            stations.slice(0, 20).forEach((station, index) => {
+                const isCheapest = index === 0;
+                const color = isCheapest ? '#10b981' : (station.price > cheapestPrice * 1.05 ? '#ef4444' : '#f59e0b');
+                
+                // Créer l'icône personnalisée avec le prix
+                const customIcon = L.divIcon({
+                    className: 'price-marker',
+                    html: `<div style="background:${color};color:white;padding:4px 8px;border-radius:12px;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;">${station.price.toFixed(2)}€</div>`,
+                    iconSize: [60, 30],
+                    iconAnchor: [30, 15]
+                });
+                
+                // 🔧 CORRECTION 2: Utiliser [lat, lon] pour Leaflet (format correct)
+                const marker = L.marker([station.lat, station.lon], { icon: customIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="font-family:Inter,sans-serif;min-width:200px;">
+                            <h3 style="margin:0 0 8px 0;font-size:14px;font-weight:600;">${station.brand}</h3>
+                            <p style="margin:0 0 8px 0;font-size:12px;color:#666;">${station.address}</p>
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee;">
+                                <span style="font-size:18px;font-weight:bold;color:${color};">${station.price.toFixed(3)} €/L</span>
+                                <span style="font-size:12px;color:#666;">${station.distance} km</span>
+                            </div>
+                        </div>
+                    `);
+                
+                markers.push(marker);
+            });
+            
+            // Ajuster la vue pour voir tous les marqueurs
+            if (markers.length > 0) {
+                const group = new L.featureGroup([...markers, L.marker([currentPosition.lat, currentPosition.lon])]);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+            
+            // Mettre à jour le compteur
+            document.getElementById('stationCount').textContent = `${stations.length} station${stations.length > 1 ? 's' : ''}`;
+            
+            // Mettre à jour l'heure
+            if (stations[0]?.updateTime) {
+                document.getElementById('lastUpdate').textContent = new Date(stations[0].updateTime).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+            }
+            
+            // Mettre à jour la liste
+            document.getElementById('stationsList').innerHTML = stations.slice(0, 10).map((station, index) => {
+                const isCheapest = index === 0;
+                const priceClass = isCheapest ? '' : (station.price > cheapestPrice * 1.05 ? 'expensive' : 'medium');
+                const savings = isCheapest ? '' : `+${((station.price - cheapestPrice) * 100).toFixed(0)}c`;
+                
+                // 🔧 CORRECTION 3: Encoder l'adresse pour Google Maps avec destination=
+                const encodedAddress = encodeURIComponent(station.address);
+                const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}&travelmode=driving`;
+                
+                return `
+                    <div class="station-card glass-card rounded-2xl p-4 animate-slide-up" style="animation-delay:${index*0.05}s">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="font-semibold text-white truncate">${station.brand}</h3>
+                                    ${isCheapest ? '<span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">Moins cher</span>' : ''}
+                                </div>
+                                <p class="text-sm text-gray-400 mb-2 truncate">${station.address}</p>
+                                <div class="flex items-center gap-3 text-xs text-gray-500">
+                                    <span><i class="fas fa-map-marker-alt mr-1"></i>${station.distance} km</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="price-tag ${priceClass} text-white px-3 py-2 rounded-xl font-bold text-lg mb-1">${station.price.toFixed(2)}€</div>
+                                <div class="text-xs text-gray-500">${savings}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                            <a href="${mapsUrl}" target="_blank" class="text-blue-400 text-sm hover:text-blue-300 flex items-center gap-1">
+                                <i class="fas fa-directions"></i>
+                                Itinéraire
+                            </a>
+                            <button onclick="toggleFavorite('${station.id}')" class="text-gray-500 hover:text-red-400 transition-colors" id="fav-${station.id}">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="glass-card rounded-2xl p-8 text-center text-gray-400">Aucune station trouvée dans ce rayon</div>';
+        }
+
+        function loadDemoData(lat, lon) {
+            showToast('Mode démo (API indisponible)', 'info');
+            const brands = ['TotalEnergies', 'Shell', 'Carrefour', 'Leclerc', 'Avia', 'Intermarché'];
+            stations = Array.from({length: 8}, (_, i) => {
+                const angle = (i / 8) * Math.PI * 2;
+                const dist = (Math.random() * CONFIG.radius * 0.8) + 0.5;
+                const basePrice = CONFIG.selectedFuel === 'Gazole' ? 1.65 : (CONFIG.selectedFuel === 'SP98' ? 1.85 : 1.75);
+                const stationLat = lat + (dist/111) * Math.cos(angle);
+                const stationLon = lon + (dist/(111*Math.cos(lat*Math.PI/180))) * Math.sin(angle);
+                
+                return {
+                    id: `demo-${i}`,
+                    brand: brands[i % brands.length],
+                    address: `${Math.floor(Math.random()*50)+1} Avenue des Champs-Élysées, 75008 Paris`,
+                    lat: stationLat,
+                    lon: stationLon,
+                    price: basePrice + (Math.random()-0.5)*0.20,
+                    fuel: CONFIG.selectedFuel,
+                    distance: Math.round(dist*10)/10,
+                    updateTime: new Date().toISOString()
+                };
+            }).sort((a, b) => a.price - b.price);
+            updateUI();
+        }
+
+        function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.style.transform = 'rotate(360deg)';
+            btn.style.transition = 'transform 1s';
+            setTimeout(() => {
+                btn.style.transform = 'rotate(0deg)';
+            }, 1000);
+            
+            if (currentPosition) searchStations(currentPosition.lat, currentPosition.lon);
+        }
+
+        function toggleFavorite(stationId) {
+            const btn = document.getElementById(`fav-${stationId}`);
+            const icon = btn.querySelector('i');
+            
+            if (icon.classList.contains('far')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.classList.add('text-red-400');
+                showToast('Ajouté aux favoris', 'success');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.classList.remove('text-red-400');
+                showToast('Retiré des favoris', 'info');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.querySelector('i').className = `fas text-xl ${type === 'success' ? 'fa-check-circle text-green-400' : (type === 'error' ? 'fa-exclamation-circle text-red-400' : 'fa-info-circle text-blue-400')}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchAddress();
+        });
+    </script>
+</body>
+</html>
