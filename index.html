@@ -1,0 +1,454 @@
+!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CarburantNear">
+    <title>CarburantNear</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        :root{--bg:#0f172a;--card:#1e293b;--accent:#f97316;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--border:#334155;--blue:#3b82f6}
+        body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+        /* BANNER iOS */
+        #installBanner{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:11px 14px;margin:12px 16px 0;font-size:12px;color:var(--muted);line-height:1.7;display:none}
+        #installBanner b{color:var(--blue);display:block;margin-bottom:3px;font-size:13px}
+        .ib-close{float:right;cursor:pointer;font-size:18px;line-height:1;margin-left:8px;color:var(--muted)}
+        /* HEADER */
+        .header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px}
+        .htop{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+        .htitle{font-size:21px;font-weight:800;color:var(--accent)}
+        .hsub{font-size:11px;color:var(--muted)}
+        .rbtn{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);cursor:pointer;font-size:12px;font-weight:600}
+        /* MODE */
+        .msw{display:flex;background:var(--card);border-radius:10px;padding:3px;border:1px solid var(--border);margin-bottom:10px}
+        .mb{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+        .mb.active{background:var(--accent);color:#fff}
+        /* BARS */
+        .lbar{padding:8px 11px;background:var(--card);border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--muted);border:1px solid var(--border);min-height:36px;display:flex;align-items:center;gap:6px}
+        /* SEARCH */
+        .swrap{position:relative;margin-bottom:10px}
+        .sinp{width:100%;padding:10px 76px 10px 13px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none}
+        .sinp:focus{border-color:var(--accent)}
+        .sinp::placeholder{color:var(--muted)}
+        .sbtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accent);border:none;border-radius:7px;padding:6px 11px;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+        .aclist{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;z-index:200;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.5);display:none}
+        .aci{padding:10px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+        .aci:last-child{border-bottom:none}
+        .aci:active{background:var(--border)}
+        .acn{font-weight:600;color:var(--text)}
+        .acd{font-size:11px;color:var(--muted);margin-top:1px}
+        /* TABS */
+        .ftabs{display:flex;gap:6px}
+        .tab{flex:1;padding:8px 2px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:all .2s}
+        .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+        /* CONTENT */
+        .content{padding:13px 16px}
+        .sbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:13px}
+        .sc{background:var(--card);border-radius:10px;padding:9px 8px;text-align:center;border:1px solid var(--border)}
+        .sl{font-size:10px;color:var(--muted);text-transform:uppercase}
+        .sv{font-size:18px;font-weight:800;margin-top:3px}
+        /* CARDS */
+        .slist{display:flex;flex-direction:column;gap:10px}
+        .scard{background:var(--card);border-radius:13px;padding:12px 12px 12px 46px;border:1px solid var(--border);position:relative;overflow:hidden}
+        .scard.top{border-color:var(--green)}
+        .scard.top::after{content:"MOINS CHER";position:absolute;top:0;right:0;background:var(--green);color:#fff;font-size:9px;font-weight:800;padding:4px 8px;border-radius:0 13px 0 8px}
+        .rb{position:absolute;left:11px;top:12px;width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted)}
+        .rb.r1{background:rgba(249,115,22,.2);color:var(--accent)}
+        .rb.r2{background:rgba(34,197,94,.15);color:var(--green)}
+        .sh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+        .sn{font-weight:700;font-size:14px;flex:1;margin-right:8px;line-height:1.3}
+        .sp{font-size:22px;font-weight:900;color:var(--accent);line-height:1}
+        .spu{font-size:11px;color:var(--muted);font-weight:400}
+        .ssv{font-size:10px;text-align:right}
+        .sa{font-size:12px;color:var(--muted);margin-bottom:7px}
+        .sf{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
+        .db{font-size:12px;color:var(--muted);background:var(--bg);padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
+        .su{font-size:11px;color:var(--muted)}
+        .mb2{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.4);border-radius:6px;padding:4px 9px;color:var(--accent);font-size:11px;font-weight:600;text-decoration:none;display:inline-block}
+        .ap{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
+        .pb{font-size:11px;padding:3px 8px;border-radius:20px;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+        /* STATES */
+        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;gap:16px}
+        .spin{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+        .spinsm{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;display:inline-block;vertical-align:middle}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .lt{color:var(--muted);font-size:14px}
+        .ebox{background:rgba(239,68,68,.08);border:1px solid var(--red);border-radius:12px;padding:16px;text-align:center;margin:14px 0}
+        .ebox p{color:var(--red);font-size:13px;margin-bottom:10px;line-height:1.5}
+        .rbtn2{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 20px;cursor:pointer;font-size:13px;font-weight:700}
+        .cd{text-align:center;font-size:12px;color:var(--muted);padding:14px 12px 4px}
+        .cd span{color:var(--accent);font-weight:700}
+        .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+        .empty .ic{font-size:48px;margin-bottom:12px}
+        .empty p{font-size:14px;line-height:1.6}
+        .notice{background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:9px;padding:9px 12px;font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+        .notice b{color:var(--accent)}
+        .ltag{display:inline-flex;align-items:center;gap:5px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);border-radius:20px;padding:3px 9px;font-size:12px;color:var(--blue);font-weight:600}
+        .ltx{cursor:pointer;color:var(--muted)}
+    </style>
+</head>
+<body>
+
+<div id="installBanner">
+    <span class="ib-close" onclick="document.getElementById('installBanner').style.display='none'">x</span>
+    <b>Installer sur iPhone comme une vraie app</b>
+    1. Appuyez sur le bouton Partager (carre avec fleche) en bas de Safari<br>
+    2. Choisissez "Sur l'ecran d'accueil"<br>
+    3. Appuyez sur "Ajouter"
+</div>
+
+<div class="header">
+    <div class="htop">
+        <div><div class="htitle">Carburant Near</div><div class="hsub">Stations moins cheres - Rayon 10 km</div></div>
+        <button class="rbtn" onclick="doReload()">Actualiser</button>
+    </div>
+    <div class="msw">
+        <button class="mb active" id="btn-gps" onclick="switchMode('gps')">Ma position GPS</button>
+        <button class="mb" id="btn-city" onclick="switchMode('city')">Adresse / Ville</button>
+    </div>
+    <div id="gps-section">
+        <div class="lbar" id="locBar">Localisation en cours...</div>
+    </div>
+    <div id="city-section" style="display:none">
+        <div class="swrap">
+            <input type="text" id="sinp" class="sinp" placeholder="Ex: 12 rue Victor Hugo, Antibes" autocomplete="off" autocorrect="off" />
+            <button class="sbtn" onclick="doSearch()">OK</button>
+            <div id="aclist" class="aclist"></div>
+        </div>
+        <div class="lbar" id="searchBar">Tapez une adresse ou ville</div>
+    </div>
+    <div class="ftabs">
+        <button class="tab active" id="t-SP95" onclick="setFuel('SP95')">SP 95</button>
+        <button class="tab" id="t-SP98" onclick="setFuel('SP98')">SP 98</button>
+        <button class="tab" id="t-Gazole" onclick="setFuel('Gazole')">Diesel</button>
+        <button class="tab" id="t-E10" onclick="setFuel('E10')">E10</button>
+    </div>
+</div>
+
+<div class="content" id="content">
+    <div class="loading"><div class="spin"></div><div class="lt">Localisation GPS...</div></div>
+</div>
+
+<script>
+var APIS = [
+    'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records',
+    'https://opendatamef.opendatasoft.com/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records'
+];
+var PROXY = 'https://corsproxy.io/?';
+var NOMI  = 'https://nominatim.openstreetmap.org/search';
+var R_KM  = 10;
+var REF_SEC = 3600;
+
+var refLat=null, refLon=null, locLabel='votre position';
+var allStations=[], currentFuel='SP95', currentMode='gps';
+var cdTimer=null, cdSec=REF_SEC;
+var acTmr=null, acIdx=-1, acData=[];
+var FLABELS = {SP95:'SP 95',SP98:'SP 98',Gazole:'Diesel',E10:'E10',E85:'E85',GPLc:'GPL'};
+
+/* iOS banner */
+if(/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
+    document.getElementById('installBanner').style.display = 'block';
+}
+
+/* setup input listeners after DOM ready */
+window.onload = function() {
+    var inp = document.getElementById('sinp');
+    if (!inp) return;
+    inp.oninput = function() {
+        clearTimeout(acTmr);
+        var v = inp.value.trim();
+        if (v.length < 3) { closeAC(); return; }
+        acTmr = setTimeout(function(){ doAC(v); }, 420);
+    };
+    inp.onkeydown = function(e) {
+        var items = document.querySelectorAll('.aci');
+        if (e.keyCode === 40) { e.preventDefault(); acIdx = Math.min(acIdx+1, items.length-1); hlAC(items); }
+        else if (e.keyCode === 38) { e.preventDefault(); acIdx = Math.max(acIdx-1, 0); hlAC(items); }
+        else if (e.keyCode === 13) { e.preventDefault(); if (acIdx>=0 && acData[acIdx]) pickResult(acData[acIdx]); else doSearch(); }
+        else if (e.keyCode === 27) closeAC();
+    };
+};
+
+function hlAC(items) { for(var i=0;i<items.length;i++) items[i].style.background = i===acIdx ? 'var(--border)' : ''; }
+function closeAC() { document.getElementById('aclist').style.display='none'; acIdx=-1; }
+
+function haversine(la1,lo1,la2,lo2) {
+    var R=6371, dLa=(la2-la1)*Math.PI/180, dLo=(lo2-lo1)*Math.PI/180;
+    var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtDist(km) { return km<1 ? Math.round(km*1000)+' m' : km.toFixed(1)+' km'; }
+function fmtDate(ds) {
+    if(!ds) return '';
+    var d=new Date(ds), diff=Math.floor((new Date()-d)/60000);
+    if(diff<1) return "a l instant";
+    if(diff<60) return 'il y a '+diff+' min';
+    if(diff<1440) return 'il y a '+Math.floor(diff/60)+'h';
+    return d.toLocaleDateString('fr-FR');
+}
+function fmtCD(s) { return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60); }
+function parseGeo(g) {
+    if(!g) return {lat:null,lon:null};
+    if(typeof g==='string') { var p=g.split(','); return {lat:parseFloat(p[0]),lon:parseFloat(p[1])}; }
+    if(g.lat!==undefined) return {lat:parseFloat(g.lat),lon:parseFloat(g.lon)};
+    if(Array.isArray(g)) return {lat:parseFloat(g[0]),lon:parseFloat(g[1])};
+    return {lat:null,lon:null};
+}
+
+/* fetch avec timeout manuel (compatible tous iOS) */
+function fetchWithTimeout(url, ms) {
+    return new Promise(function(resolve, reject) {
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var timer = setTimeout(function() {
+            if(ctrl) ctrl.abort();
+            reject(new Error('timeout'));
+        }, ms || 8000);
+        var opts = ctrl ? {signal: ctrl.signal} : {};
+        fetch(url, opts).then(function(r){ clearTimeout(timer); resolve(r); }).catch(function(e){ clearTimeout(timer); reject(e); });
+    });
+}
+
+/* fetch intelligent : direct -> proxy */
+function smartFetch(url) {
+    return fetchWithTimeout(url, 8000).then(function(r) {
+        if(r.ok) return r;
+        return fetchWithTimeout(PROXY+encodeURIComponent(url), 10000);
+    }).catch(function() {
+        return fetchWithTimeout(PROXY+encodeURIComponent(url), 10000);
+    }).then(function(r) {
+        if(!r.ok) throw new Error('Erreur '+r.status);
+        return r;
+    });
+}
+
+/* API carburant avec 4 tentatives (2 URLs x 2 syntaxes geo) */
+function fetchStations(lat, lon) {
+    var geos = [
+        "within_distance(geoloc, geom'POINT("+lon+" "+lat+")', "+R_KM+"km)",
+        "distance(geoloc, geom'POINT("+lon+" "+lat+")')<"+R_KM+"km"
+    ];
+    var attempts = [];
+    for(var a=0; a<APIS.length; a++) {
+        for(var g=0; g<geos.length; g++) {
+            attempts.push(APIS[a]+'?limit=100&where='+encodeURIComponent(geos[g]));
+        }
+    }
+    var idx = 0;
+    function tryNext() {
+        if(idx >= attempts.length) return Promise.reject(new Error('API indisponible. Verifiez votre connexion internet.'));
+        var url = attempts[idx++];
+        return smartFetch(url).then(function(r){ return r.json(); }).then(function(d){
+            if(d && d.results) return d.results;
+            return tryNext();
+        }).catch(function(){ return tryNext(); });
+    }
+    return tryNext();
+}
+
+function processRecords(records) {
+    var map = {};
+    for(var i=0; i<records.length; i++) {
+        var r = records[i];
+        var id = r.id || ((r.nom||'')+(r.adresse||'')+(r.cp||''));
+        if(!map[id]) {
+            var g = parseGeo(r.geoloc);
+            var dist = (g.lat&&g.lon&&refLat&&refLon) ? haversine(refLat,refLon,g.lat,g.lon) : null;
+            map[id] = {id:id,nom:r.nom||r.brand||'Station',adresse:r.adresse||'',ville:r.ville||'',cp:r.cp||'',lat:g.lat,lon:g.lon,distance:dist,prix:{},maj:{}};
+        }
+        var s = map[id];
+        var cols = {sp95:'SP95',sp98:'SP98',gazole:'Gazole',e10:'E10',e85:'E85',gplc:'GPLc'};
+        for(var k in cols) {
+            if(r[k+'_prix']!=null) { var v=parseFloat(String(r[k+'_prix']).replace(',','.')); if(!isNaN(v)&&v>.5){s.prix[cols[k]]=v;s.maj[cols[k]]=r[k+'_maj']||null;} }
+        }
+        if(r.prix_nom&&r.prix_valeur!=null){var v=parseFloat(String(r.prix_valeur).replace(',','.'));if(!isNaN(v)&&v>.5){s.prix[r.prix_nom]=v;s.maj[r.prix_nom]=r.prix_maj;}}
+        if(r.prix&&Array.isArray(r.prix)){for(var j=0;j<r.prix.length;j++){var p=r.prix[j];var n=p['@nom']||p.nom;var v2=parseFloat(String(p['@valeur']||p.valeur||'').replace(',','.'));if(n&&!isNaN(v2)&&v2>.5){s.prix[n]=v2;s.maj[n]=p['@maj']||p.maj;}}}
+    }
+    var arr = [];
+    for(var k2 in map) arr.push(map[k2]);
+    return arr;
+}
+
+function renderStations() {
+    var content = document.getElementById('content');
+    var filtered = allStations.filter(function(s){ return s.prix[currentFuel]&&s.prix[currentFuel]>0; });
+    filtered.sort(function(a,b){ return a.prix[currentFuel]-b.prix[currentFuel]; });
+    if(!filtered.length) {
+        content.innerHTML='<div class="notice"><b>Info:</b> Donnees France metropolitaine uniquement (data.economie.gouv.fr)</div>'
+            +'<div class="empty"><div class="ic">&#128269;</div><p>Aucune station avec du <b>'+(FLABELS[currentFuel]||currentFuel)+'</b> dans '+R_KM+' km de '+locLabel+'.</p></div>'
+            +'<div class="cd">Actualisation dans <span id="cdel">'+fmtCD(cdSec)+'</span></div>';
+        return;
+    }
+    var prices = filtered.map(function(s){return s.prix[currentFuel];});
+    var minP=prices[0], maxP=prices[prices.length-1], avgP=prices.reduce(function(a,b){return a+b;},0)/prices.length;
+    var h = '<div class="notice"><b>Source:</b> data.economie.gouv.fr - '+filtered.length+' station(s) autour de '+locLabel+'</div>';
+    h += '<div class="sbar">'
+        +'<div class="sc"><div class="sl">Min</div><div class="sv" style="color:var(--green)">'+minP.toFixed(3)+'&#8364;</div></div>'
+        +'<div class="sc"><div class="sl">Moyenne</div><div class="sv">'+avgP.toFixed(3)+'&#8364;</div></div>'
+        +'<div class="sc"><div class="sl">Max</div><div class="sv" style="color:var(--red)">'+maxP.toFixed(3)+'&#8364;</div></div>'
+        +'</div><div class="slist">';
+    for(var i=0;i<filtered.length;i++) {
+        var s = filtered[i];
+        var price = s.prix[currentFuel];
+        var mapUrl = s.lat ? 'https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lon : null;
+        var others = '';
+        for(var f in s.prix) { if(f!==currentFuel) others+='<span class="pb">'+(FLABELS[f]||f)+': '+s.prix[f].toFixed(3)+'&#8364;</span>'; }
+        var sav = i>0 ? ((price-filtered[0].prix[currentFuel])*50).toFixed(2) : null;
+        var upd = s.maj[currentFuel] ? fmtDate(s.maj[currentFuel]) : '';
+        var rc = i===0?'r1':i===1?'r2':'';
+        h += '<div class="scard '+(i===0?'top':'')+'">'
+            +'<div class="rb '+rc+'">'+(i+1)+'</div>'
+            +'<div class="sh"><div class="sn">'+s.nom+'</div>'
+            +'<div><div class="sp">'+price.toFixed(3)+'<span class="spu"> &#8364;/L</span></div>'
+            +(sav?'<div class="ssv" style="color:var(--red)">+'+sav+'&#8364;/50L</div>':'<div class="ssv" style="color:var(--green)">Meilleur prix</div>')
+            +'</div></div>'
+            +'<div class="sa">'+s.adresse+(s.cp?', '+s.cp:'')+' '+s.ville+'</div>'
+            +'<div class="sf">'
+            +(s.distance?'<span class="db">'+fmtDist(s.distance)+'</span>':'')
+            +(mapUrl?'<a href="'+mapUrl+'" target="_blank" class="mb2">Itineraire</a>':'')
+            +(upd?'<span class="su">'+upd+'</span>':'')
+            +'</div>'+(others?'<div class="ap">'+others+'</div>':'')+'</div>';
+    }
+    h += '</div><div class="cd">Prochaine actualisation dans <span id="cdel">'+fmtCD(cdSec)+'</span></div>';
+    content.innerHTML = h;
+}
+
+function startCD() {
+    if(cdTimer) clearInterval(cdTimer);
+    cdSec = REF_SEC;
+    cdTimer = setInterval(function(){
+        cdSec--;
+        var el = document.getElementById('cdel');
+        if(el) el.textContent = fmtCD(cdSec);
+        if(cdSec<=0){ clearInterval(cdTimer); doReload(); }
+    }, 1000);
+}
+
+function loadFromCoords(lat, lon) {
+    refLat=lat; refLon=lon;
+    var c = document.getElementById('content');
+    c.innerHTML='<div class="loading"><div class="spin"></div><div class="lt">Chargement des prix...</div></div>';
+    fetchStations(lat, lon).then(function(records){
+        allStations = processRecords(records);
+        if(!allStations.length){
+            c.innerHTML='<div class="notice"><b>Info:</b> Donnees France metropolitaine uniquement.</div>'
+                +'<div class="empty"><div class="ic">&#9981;</div><p>Aucune station trouvee dans '+R_KM+' km.</p></div>';
+            return;
+        }
+        renderStations();
+        startCD();
+    }).catch(function(err){
+        c.innerHTML='<div class="ebox"><p>'+err.message+'</p><button class="rbtn2" onclick="doReload()">Reessayer</button></div>';
+    });
+}
+
+function loadGPS() {
+    var c=document.getElementById('content'), bar=document.getElementById('locBar');
+    c.innerHTML='<div class="loading"><div class="spin"></div><div class="lt">Localisation GPS...</div></div>';
+    if(!navigator.geolocation){c.innerHTML='<div class="ebox"><p>Geolocalisation non supportee.</p></div>';return;}
+    navigator.geolocation.getCurrentPosition(
+        function(pos){
+            var lat=pos.coords.latitude, lon=pos.coords.longitude;
+            bar.textContent='Lat '+lat.toFixed(4)+' Lon '+lon.toFixed(4)+' | Rayon '+R_KM+' km';
+            locLabel='votre position';
+            loadFromCoords(lat,lon);
+        },
+        function(err){
+            var msg='Localisation impossible.';
+            if(err.code===1) msg='Acces GPS refuse. Allez dans Reglages > Safari > Localisation.';
+            else if(err.code===2) msg='Position indisponible.';
+            else if(err.code===3) msg='Delai GPS depasse.';
+            c.innerHTML='<div class="ebox"><p>'+msg+'</p><button class="rbtn2" onclick="loadGPS()">Reessayer</button></div>';
+        },
+        {enableHighAccuracy:true,timeout:12000,maximumAge:300000}
+    );
+}
+
+function switchMode(mode) {
+    currentMode=mode;
+    document.getElementById('btn-gps').className='mb'+(mode==='gps'?' active':'');
+    document.getElementById('btn-city').className='mb'+(mode==='city'?' active':'');
+    document.getElementById('gps-section').style.display=mode==='gps'?'':'none';
+    document.getElementById('city-section').style.display=mode==='city'?'':'none';
+    closeAC();
+    if(mode==='gps') loadGPS();
+    else document.getElementById('content').innerHTML='<div class="empty"><div class="ic">&#128269;</div><p>Tapez une adresse ou ville de France.</p></div>';
+}
+
+function setFuel(f) {
+    currentFuel=f;
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    var el=document.getElementById('t-'+f);
+    if(el) el.classList.add('active');
+    renderStations();
+}
+
+function doReload() { if(currentMode==='gps') loadGPS(); else if(refLat&&refLon) loadFromCoords(refLat,refLon); }
+
+/* Nominatim */
+function doAC(q) {
+    var url = NOMI+'?q='+encodeURIComponent(q+', France')+'&format=json&limit=6&addressdetails=1&countrycodes=fr';
+    fetch(url,{headers:{'Accept-Language':'fr'}}).then(function(r){return r.json();}).then(function(data){
+        acData = data.filter(function(d){return d.lat&&d.lon;});
+        showAC(acData);
+    }).catch(function(){closeAC();});
+}
+
+function showAC(results) {
+    var ac = document.getElementById('aclist');
+    acIdx = -1;
+    if(!results.length){ac.style.display='none';return;}
+    var h = '';
+    for(var i=0;i<results.length;i++) {
+        var parts = results[i].display_name.split(', ');
+        var name = parts.slice(0,2).join(', ');
+        var det  = parts.slice(2,5).join(', ');
+        h+='<div class="aci" onclick="pickResult(acData['+i+'])">'
+            +'<div class="acn">'+name+'</div>'
+            +'<div class="acd">'+det+'</div>'
+            +'</div>';
+    }
+    ac.innerHTML=h; ac.style.display='block';
+}
+
+function pickResult(r) {
+    var lat=parseFloat(r.lat), lon=parseFloat(r.lon);
+    var parts = r.display_name.split(', ');
+    var label = parts.slice(0,3).join(', ');
+    document.getElementById('sinp').value = parts.slice(0,2).join(', ');
+    document.getElementById('searchBar').innerHTML='<span class="ltag">'+label+' <span class="ltx" onclick="clearSearch()">x</span></span>';
+    closeAC();
+    locLabel=label;
+    loadFromCoords(lat,lon);
+}
+
+function clearSearch() {
+    document.getElementById('sinp').value='';
+    document.getElementById('searchBar').textContent='Tapez une adresse ou ville';
+    document.getElementById('content').innerHTML='<div class="empty"><div class="ic">&#128269;</div><p>Tapez une adresse ou ville de France.</p></div>';
+    refLat=null; refLon=null;
+}
+
+function doSearch() {
+    var v = document.getElementById('sinp').value.trim();
+    if(!v) return;
+    closeAC();
+    document.getElementById('searchBar').innerHTML='<span class="spinsm"></span> Recherche...';
+    fetch(NOMI+'?q='+encodeURIComponent(v+', France')+'&format=json&limit=5&addressdetails=1&countrycodes=fr',{headers:{'Accept-Language':'fr'}})
+        .then(function(r){return r.json();}).then(function(data){
+            acData=data.filter(function(d){return d.lat&&d.lon;});
+            if(!acData.length){document.getElementById('searchBar').textContent='Adresse introuvable en France';return;}
+            if(acData.length===1){pickResult(acData[0]);return;}
+            showAC(acData);
+            document.getElementById('searchBar').textContent='Selectionnez un resultat';
+        }).catch(function(){document.getElementById('searchBar').textContent='Erreur reseau.';});
+}
+
+/* INIT */
+loadGPS();
+</script>
+</body>
+</html>
