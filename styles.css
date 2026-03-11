@@ -296,6 +296,12 @@ input[type="range"]::-webkit-slider-runnable-track {
   z-index: 1;
 }
 
+main,
+.app-layout,
+.controls-panel {
+  overflow: visible !important;
+}
+
 @media (min-width: 1024px) {
   body {
     padding-bottom: 24px;
