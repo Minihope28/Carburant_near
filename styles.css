@@ -257,10 +257,43 @@ input[type="range"]::-webkit-slider-runnable-track {
   display: block;
 }
 
-.controls-panel,
-.results-panel,
-.glass-card {
+.location-section {
   position: relative;
+  z-index: 2000;
+  overflow: visible !important;
+}
+
+.location-section .autocomplete-container {
+  position: relative;
+  z-index: 3000;
+  overflow: visible !important;
+}
+
+.location-section .suggestions-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+  background: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.location-section .suggestions-list.show {
+  display: block;
+}
+
+.controls-panel > section:not(.location-section),
+.results-panel,
+.glass-card:not(.location-section) {
+  position: relative;
+  z-index: 1;
 }
 
 @media (min-width: 1024px) {
