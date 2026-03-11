@@ -786,58 +786,55 @@
     }
 
     function processGouvStations(results, userLat, userLon) {
-      stations = [];
 
-      for (const fields of results) {
-        try {
-          const lat = parseFloat(fields.latitude);
-          const lon = parseFloat(fields.longitude);
+  stations = [];
 
-          if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
+  for (const fields of results) {
 
-          const distance = calculateDistance(userLat, userLon, lat, lon);
-          if (distance > CONFIG.radius) continue;
+    const lat = parseFloat(fields.latitude) / 100000;
+    const lon = parseFloat(fields.longitude) / 100000;
 
-          let price = null;
-          let ruptureTemp = false;
+    if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
 
-          if (CONFIG.selectedFuel === "E10") {
-            price = parseFloat(fields.e10_prix);
-            ruptureTemp = fields.e10_rupture_temporaire === true;
-          } else if (CONFIG.selectedFuel === "SP98") {
-            price = parseFloat(fields.sp98_prix);
-            ruptureTemp = fields.sp98_rupture_temporaire === true;
-          } else if (CONFIG.selectedFuel === "Gazole") {
-            price = parseFloat(fields.gazole_prix);
-            ruptureTemp = fields.gazole_rupture_temporaire === true;
-          }
+    const distance = fields._distance
+      ? fields._distance / 1000
+      : calculateDistance(userLat, userLon, lat, lon);
 
-          if (!price || price <= 0 || ruptureTemp) continue;
+    let price = null;
 
-          stations.push({
-            id: String(fields.id || Math.random().toString(36).slice(2)),
-            brand: fields.enseigne || "Station",
-            address: formatGouvAddress(fields),
-            lat,
-            lon,
-            price,
-            distance,
-            fuel: CONFIG.selectedFuel,
-            updateTime: fields.date_maj || new Date().toISOString()
-          });
-        } catch (error) {
-          console.warn("Erreur traitement station :", error);
-        }
-      }
-
-      if (!stations.length) {
-        showError("Aucune station trouvée dans ce rayon pour ce carburant.");
-        return;
-      }
-
-      sortAndDisplayStations();
-      showToast(`${stations.length} stations trouvées`, "success");
+    if (CONFIG.selectedFuel === "E10") {
+      price = parseFloat(fields.e10_prix);
     }
+    else if (CONFIG.selectedFuel === "SP98") {
+      price = parseFloat(fields.sp98_prix);
+    }
+    else if (CONFIG.selectedFuel === "Gazole") {
+      price = parseFloat(fields.gazole_prix);
+    }
+
+    if (!price) continue;
+
+    stations.push({
+      id: fields.id,
+      brand: "Station",
+      address: `${fields.adresse}, ${fields.cp} ${fields.ville}`,
+      lat,
+      lon,
+      price,
+      distance,
+      fuel: CONFIG.selectedFuel,
+      updateTime: new Date().toISOString()
+    });
+
+  }
+
+  if (!stations.length) {
+    showEmpty("Aucune station trouvée dans ce rayon.");
+    return;
+  }
+
+  sortAndDisplayStations();
+}
 
     function formatGouvAddress(fields) {
       const parts = [];
