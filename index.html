@@ -748,78 +748,44 @@
     }
 
     async function searchStations(lat, lon) {
-      document.getElementById("stationsList").innerHTML = `
-        <div class="glass-card rounded-2xl p-8 text-center">
-          <div class="spinner mx-auto mb-4"></div>
-          <p class="text-gray-400 text-sm">Recherche des stations...</p>
-        </div>
-      `;
+  document.getElementById("stationsList").innerHTML = `
+    <div class="glass-card rounded-2xl p-8 text-center">
+      <div class="spinner mx-auto mb-4"></div>
+      <p class="text-gray-400 text-sm">Recherche des stations...</p>
+    </div>
+  `;
 
-      try {
-        const deltaLat = CONFIG.radius / 111;
-        const deltaLon = CONFIG.radius / (111 * Math.cos((lat * Math.PI) / 180));
+  try {
+    const url =
+      `${CONFIG.fuelApiUrl}` +
+      `?lat=${encodeURIComponent(lat)}` +
+      `&lon=${encodeURIComponent(lon)}` +
+      `&radius=${encodeURIComponent(CONFIG.radius)}`;
 
-        const minLat = lat - deltaLat;
-        const maxLat = lat + deltaLat;
-        const minLon = lon - deltaLon;
-        const maxLon = lon + deltaLon;
-
-        const whereClause = `
-          latitude >= ${minLat}
-          AND latitude <= ${maxLat}
-          AND longitude >= ${minLon}
-          AND longitude <= ${maxLon}
-        `
-          .replace(/\s+/g, " ")
-          .trim();
-
-        const selectFields = [
-          "id",
-          "enseigne",
-          "adresse",
-          "cp",
-          "ville",
-          "latitude",
-          "longitude",
-          "e10_prix",
-          "sp98_prix",
-          "gazole_prix",
-          "e10_rupture_temporaire",
-          "sp98_rupture_temporaire",
-          "gazole_rupture_temporaire",
-          "date_maj"
-        ].join(",");
-
-        const url =
-          `${CONFIG.fuelApiUrl}` +
-          `?where=${encodeURIComponent(whereClause)}` +
-          `&limit=100` +
-          `&select=${encodeURIComponent(selectFields)}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Accept: "application/json"
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.results || !Array.isArray(data.results)) {
-          throw new Error("Réponse API invalide");
-        }
-
-        processGouvStations(data.results, lat, lon);
-      } catch (error) {
-        console.error("Erreur recherche stations :", error);
-        showError(
-          "Impossible de charger les stations pour le moment. Réessayez un peu plus tard."
-        );
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json"
       }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
+
+    const data = await response.json();
+
+    if (!data.results || !Array.isArray(data.results)) {
+      throw new Error("Réponse API invalide");
+    }
+
+    processGouvStations(data.results, lat, lon);
+  } catch (error) {
+    console.error("Erreur recherche stations :", error);
+    showError(
+      "Impossible de charger les stations pour le moment. Réessayez un peu plus tard."
+    );
+  }
+}
 
     function processGouvStations(results, userLat, userLon) {
       stations = [];
