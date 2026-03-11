@@ -10,6 +10,7 @@ const CONFIG = {
 let stations = [];
 let currentPosition = null;
 let debounceTimer = null;
+let suggestionsData = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   setupAutocomplete();
@@ -17,13 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function setupAutocomplete() {
   const input = document.getElementById("addressInput");
-  const suggestionsList = document.getElementById("suggestionsList");
 
   input.addEventListener("input", (e) => {
     const query = e.target.value.trim();
 
     if (query.length < 3) {
-      suggestionsList.classList.remove("show");
+      hideSuggestionsPortal();
       return;
     }
 
@@ -33,16 +33,19 @@ function setupAutocomplete() {
 
   input.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-      suggestionsList.classList.remove("show");
+      hideSuggestionsPortal();
       searchAddress();
     }
   });
 
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".autocomplete-container")) {
-      suggestionsList.classList.remove("show");
+    if (!e.target.closest(".autocomplete-container") && !e.target.closest("#suggestionsPortal")) {
+      hideSuggestionsPortal();
     }
   });
+
+  window.addEventListener("resize", updateSuggestionsPortalPosition);
+  window.addEventListener("scroll", updateSuggestionsPortalPosition, true);
 }
 
 async function fetchSuggestions(query) {
@@ -58,21 +61,28 @@ async function fetchSuggestions(query) {
 }
 
 function displaySuggestions(suggestions) {
-  const suggestionsList = document.getElementById("suggestionsList");
-  const currentQuery = document.getElementById("addressInput").value.trim();
+  const portal = document.getElementById("suggestionsPortal");
+  const input = document.getElementById("addressInput");
+  const currentQuery = input.value.trim();
 
-  if (!suggestions.length) {
-    suggestionsList.classList.remove("show");
-    suggestionsList.innerHTML = "";
+  suggestionsData = suggestions || [];
+
+  if (!suggestionsData.length) {
+    hideSuggestionsPortal();
     return;
   }
 
-  suggestionsList.innerHTML = suggestions
-    .map((feature) => {
+  const rect = input.getBoundingClientRect();
+
+  portal.style.left = `${rect.left}px`;
+  portal.style.top = `${rect.bottom + 6}px`;
+  portal.style.width = `${rect.width}px`;
+
+  portal.innerHTML = suggestionsData
+    .map((feature, index) => {
       const label = feature.properties?.label || "Adresse";
       const context = feature.properties?.context || "";
       const type = feature.properties?.type || "";
-      const coords = feature.geometry?.coordinates || [0, 0];
 
       let icon = "fa-map-marker-alt";
       if (type === "housenumber") icon = "fa-home";
@@ -80,7 +90,7 @@ function displaySuggestions(suggestions) {
       else if (type === "municipality" || type === "locality") icon = "fa-city";
 
       return `
-        <div class="suggestion-item" onclick="selectSuggestion(${JSON.stringify(label)}, ${coords[1]}, ${coords[0]})">
+        <div class="suggestion-item" onclick="selectSuggestionByIndex(${index})">
           <i class="fas ${icon} suggestion-icon"></i>
           <div style="flex:1;">
             <div class="suggestion-text">${highlightMatch(label, currentQuery)}</div>
@@ -91,7 +101,36 @@ function displaySuggestions(suggestions) {
     })
     .join("");
 
-  suggestionsList.classList.add("show");
+  portal.classList.remove("hidden");
+}
+
+function hideSuggestionsPortal() {
+  const portal = document.getElementById("suggestionsPortal");
+  portal.classList.add("hidden");
+  portal.innerHTML = "";
+}
+
+async function selectSuggestionByIndex(index) {
+  const feature = suggestionsData[index];
+  if (!feature) return;
+
+  const label = feature.properties?.label || "Adresse";
+  const coords = feature.geometry?.coordinates || [0, 0];
+
+  await selectSuggestion(label, coords[1], coords[0]);
+  hideSuggestionsPortal();
+}
+
+function updateSuggestionsPortalPosition() {
+  const portal = document.getElementById("suggestionsPortal");
+  const input = document.getElementById("addressInput");
+
+  if (portal.classList.contains("hidden")) return;
+
+  const rect = input.getBoundingClientRect();
+  portal.style.left = `${rect.left}px`;
+  portal.style.top = `${rect.bottom + 6}px`;
+  portal.style.width = `${rect.width}px`;
 }
 
 function escapeRegExp(string) {
@@ -110,7 +149,7 @@ function highlightMatch(text, query) {
 
 async function selectSuggestion(label, lat, lon) {
   document.getElementById("addressInput").value = label;
-  document.getElementById("suggestionsList").classList.remove("show");
+  hideSuggestionsPortal();
 
   currentPosition = {
     lat: parseFloat(lat),
@@ -217,7 +256,7 @@ async function searchAddress() {
     return;
   }
 
-  document.getElementById("suggestionsList").classList.remove("show");
+  hideSuggestionsPortal();
   showToast("Recherche...", "info");
 
   try {
