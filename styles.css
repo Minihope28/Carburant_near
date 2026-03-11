@@ -257,6 +257,12 @@ input[type="range"]::-webkit-slider-runnable-track {
   display: block;
 }
 
+.controls-panel,
+.results-panel,
+.glass-card {
+  position: relative;
+}
+
 @media (min-width: 1024px) {
   body {
     padding-bottom: 24px;
