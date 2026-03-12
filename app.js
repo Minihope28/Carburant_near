@@ -144,6 +144,18 @@ function setupAutocomplete() {
   const input = document.getElementById("addressInput");
   if (!input) return;
 
+  input.addEventListener("focus", () => {
+    const searchPanel = document.querySelector(".search-panel");
+    if (searchPanel) {
+      setTimeout(() => {
+        searchPanel.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }, 250);
+    }
+  });
+
   input.addEventListener("input", (e) => {
     const query = e.target.value.trim();
 
@@ -172,7 +184,8 @@ function setupAutocomplete() {
   document.addEventListener("click", (e) => {
     if (
       !e.target.closest(".autocomplete-wrap") &&
-      !e.target.closest("#suggestionsPortal")
+      !e.target.closest("#suggestionsPortal") &&
+      !e.target.closest(".search-panel")
     ) {
       hideSuggestions();
     }
@@ -230,16 +243,12 @@ async function fetchSuggestionsMorocco(query) {
 function renderSuggestions() {
   const portal = document.getElementById("suggestionsPortal");
   const input = document.getElementById("addressInput");
+  const searchPanel = document.querySelector(".search-panel");
 
   if (!portal || !input || !suggestions.length) {
     hideSuggestions();
     return;
   }
-
-  const rect = input.getBoundingClientRect();
-  portal.style.left = `${rect.left}px`;
-  portal.style.top = `${rect.bottom + 6}px`;
-  portal.style.width = `${rect.width}px`;
 
   portal.innerHTML = suggestions
     .map((s, i) => {
@@ -256,14 +265,26 @@ function renderSuggestions() {
     .join("");
 
   portal.classList.remove("hidden");
+
+  if (searchPanel) {
+    searchPanel.classList.add("is-focused");
+  }
+
+  positionSuggestionsPortal();
 }
 
 function hideSuggestions() {
   const portal = document.getElementById("suggestionsPortal");
+  const searchPanel = document.querySelector(".search-panel");
+
   if (!portal) return;
 
   portal.classList.add("hidden");
   portal.innerHTML = "";
+
+  if (searchPanel) {
+    searchPanel.classList.remove("is-focused");
+  }
 }
 
 function positionSuggestionsPortal() {
@@ -273,9 +294,14 @@ function positionSuggestionsPortal() {
   if (!portal || !input || portal.classList.contains("hidden")) return;
 
   const rect = input.getBoundingClientRect();
-  portal.style.left = `${rect.left}px`;
-  portal.style.top = `${rect.bottom + 6}px`;
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - rect.bottom;
+  const desiredHeight = Math.min(320, Math.max(180, spaceBelow - 16));
+
+  portal.style.left = `${Math.max(12, rect.left)}px`;
+  portal.style.top = `${rect.bottom + 8}px`;
   portal.style.width = `${rect.width}px`;
+  portal.style.maxHeight = `${desiredHeight}px`;
 }
 
 async function selectSuggestion(index) {
