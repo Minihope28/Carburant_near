@@ -417,49 +417,84 @@ function renderStations() {
 
   const cheapest = Math.min(...stations.map((s) => s.price));
   const closest = Math.min(...stations.map((s) => s.distance));
+  const bestStationId = stations[0].id;
 
   list.innerHTML = stations
     .slice(0, 20)
     .map((s, index) => {
       const isCheapest = s.price === cheapest;
-      const isClosest = s.distance === closest;
+  const isClosest = s.distance === closest;
+  const isBestForCurrentFilter = s.id === bestStationId;
 
-      const mapsUrl =
-        `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}&travelmode=driving`;
+  const mapsUrl =
+    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}&travelmode=driving`;
 
-      let badges = "";
-      if (isCheapest) {
-        badges += `
-          <span class="badge badge-green">
-            <i class="fa-solid fa-check"></i>
-            Meilleur prix
-          </span>
-        `;
-      }
+  let badges = "";
+  let priceClass = "expensive";
+  let priceExtra = "";
 
-      if (isClosest) {
-        badges += `
-          <span class="badge badge-blue">
-            <i class="fa-solid fa-location-arrow"></i>
-            Plus proche
-          </span>
-        `;
-      }
+  if (isBestForCurrentFilter) {
+    priceClass = "";
 
-      if (!isCheapest && !isClosest && CONFIG.sortBy === "both") {
-        badges += `
-          <span class="badge badge-orange">
-            <i class="fa-solid fa-scale-balanced"></i>
-            Bon compromis
-          </span>
-        `;
-      }
-
-      const priceClass = isCheapest
-        ? ""
-        : s.price > cheapest * 1.03
-        ? "expensive"
-        : "medium";
+    if (CONFIG.sortBy === "price") {
+      badges += `
+        <span class="badge badge-green">
+          <i class="fa-solid fa-check"></i>
+          Meilleur prix
+        </span>
+      `;
+      priceExtra = `<span class="price-top">Top prix</span>`;
+    } else if (CONFIG.sortBy === "distance") {
+      badges += `
+        <span class="badge badge-green">
+          <i class="fa-solid fa-location-arrow"></i>
+          Plus proche
+        </span>
+      `;
+      priceExtra = `<span class="price-top">Top distance</span>`;
+    } else {
+      badges += `
+        <span class="badge badge-green">
+          <i class="fa-solid fa-scale-balanced"></i>
+          Meilleur compromis
+        </span>
+      `;
+      priceExtra = `<span class="price-top">Top mix</span>`;
+    }
+  } else {
+    if (isCheapest) {
+      badges += `
+        <span class="badge badge-orange">
+          <i class="fa-solid fa-euro-sign"></i>
+          Bon prix
+        </span>
+      `;
+    }
+  
+    if (isClosest) {
+      badges += `
+        <span class="badge badge-orange">
+          <i class="fa-solid fa-location-dot"></i>
+          Proche
+        </span>
+      `;
+    }
+  
+    if (CONFIG.sortBy === "both" && !isCheapest && !isClosest) {
+      badges += `
+        <span class="badge badge-orange">
+          <i class="fa-solid fa-scale-balanced"></i>
+          Bon compromis
+        </span>
+      `;
+    }
+  
+    if (s.price <= cheapest * 1.03) {
+      priceClass = "medium";
+    }
+  
+    priceExtra = `<span class="price-delta">+${((s.price - cheapest) * 100).toFixed(1)} c</span>`;
+  }
 
       return `
         <article class="station-card" style="animation-delay:${index * 0.04}s">
