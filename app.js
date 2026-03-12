@@ -464,8 +464,14 @@ function renderStations() {
           priceExtra = `<span class="price-top">Top mix</span>`;
         }
       } else {
-        priceClass = priceGap <= 0.05 ? "medium" : "expensive";
+        // Couleur prix
+        if (priceGap <= 0.05) {
+          priceClass = "medium";
+        } else {
+          priceClass = "expensive";
+        }
       
+        // Badge prix
         if (isCheapest) {
           badges += `
             <span class="badge badge-orange">
@@ -475,6 +481,7 @@ function renderStations() {
           `;
         }
       
+        // Badge distance
         if (isClosest) {
           badges += `
             <span class="badge badge-orange">
@@ -484,6 +491,7 @@ function renderStations() {
           `;
         }
       
+        // Badge compromis en mode mix
         if (CONFIG.sortBy === "both") {
           if (priceClass === "medium") {
             badges += `
