@@ -718,6 +718,12 @@ input {
   border: 1px solid rgba(24, 197, 143, 0.18);
 }
 
+.badge-red {
+  background: rgba(239, 91, 107, 0.12);
+  color: #ff7d8a;
+  border: 1px solid rgba(239, 91, 107, 0.2);
+}
+
 .badge-orange {
   background: rgba(243, 179, 61, 0.12);
   color: #ffbf55;
