@@ -464,11 +464,7 @@ function renderStations() {
           priceExtra = `<span class="price-top">Top mix</span>`;
         }
       } else {
-        if (priceGap <= 0.05) {
-          priceClass = "medium";
-        } else {
-          priceClass = "expensive";
-        }
+        priceClass = priceGap <= 0.05 ? "medium" : "expensive";
       
         if (isCheapest) {
           badges += `
@@ -488,7 +484,7 @@ function renderStations() {
           `;
         }
       
-        if (CONFIG.sortBy === "both" && !isCheapest && !isClosest) {
+        if (CONFIG.sortBy === "both") {
           if (priceClass === "medium") {
             badges += `
               <span class="badge badge-orange">
@@ -506,11 +502,7 @@ function renderStations() {
           }
         }
       
-        if (priceClass === "medium") {
-          priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
-        } else {
-          priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
-        }
+        priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
       }
 
       return `
