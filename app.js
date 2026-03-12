@@ -480,13 +480,26 @@ function renderStations() {
       `;
     }
   
-    if (CONFIG.sortBy === "both" && !isCheapest && !isClosest) {
-      badges += `
-        <span class="badge badge-orange">
-          <i class="fa-solid fa-scale-balanced"></i>
-          Bon compromis
-        </span>
-      `;
+    if (CONFIG.sortBy === "both" && !isBestForCurrentFilter) {
+    
+      if (priceClass === "medium") {
+        badges += `
+          <span class="badge badge-orange">
+            <i class="fa-solid fa-scale-balanced"></i>
+            Bon compromis
+          </span>
+        `;
+      }
+    
+      if (priceClass === "expensive") {
+        badges += `
+          <span class="badge badge-red">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Compromis faible
+          </span>
+        `;
+      }
+    
     }
   
     if (s.price <= cheapest * 1.03) {
