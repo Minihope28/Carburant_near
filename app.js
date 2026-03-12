@@ -474,17 +474,18 @@ function renderStations() {
         // Badge prix
         if (isCheapest) {
           badges += `
-            <span class="badge badge-orange">
+            <span class="badge badge-green">
               <i class="fa-solid fa-euro-sign"></i>
               Bon prix
             </span>
           `;
         }
+
       
         // Badge distance
         if (isClosest) {
           badges += `
-            <span class="badge badge-orange">
+            <span class="badge badge-green">
               <i class="fa-solid fa-location-dot"></i>
               Proche
             </span>
