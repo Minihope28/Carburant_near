@@ -423,93 +423,95 @@ function renderStations() {
     .slice(0, 20)
     .map((s, index) => {
       const isCheapest = s.price === cheapest;
-  const isClosest = s.distance === closest;
-  const isBestForCurrentFilter = s.id === bestStationId;
-
-  const mapsUrl =
-    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}&travelmode=driving`;
-
-  let badges = "";
-  let priceClass = "expensive";
-  let priceExtra = "";
-
-  if (isBestForCurrentFilter) {
-    priceClass = "";
-
-    if (CONFIG.sortBy === "price") {
-      badges += `
-        <span class="badge badge-green">
-          <i class="fa-solid fa-check"></i>
-          Meilleur prix
-        </span>
-      `;
-      priceExtra = `<span class="price-top">Top prix</span>`;
-    } else if (CONFIG.sortBy === "distance") {
-      badges += `
-        <span class="badge badge-green">
-          <i class="fa-solid fa-location-arrow"></i>
-          Plus proche
-        </span>
-      `;
-      priceExtra = `<span class="price-top">Top distance</span>`;
-    } else {
-      badges += `
-        <span class="badge badge-green">
-          <i class="fa-solid fa-scale-balanced"></i>
-          Meilleur compromis
-        </span>
-      `;
-      priceExtra = `<span class="price-top">Top mix</span>`;
-    }
-  } else {
-    if (isCheapest) {
-      badges += `
-        <span class="badge badge-orange">
-          <i class="fa-solid fa-euro-sign"></i>
-          Bon prix
-        </span>
-      `;
-    }
-  
-    if (isClosest) {
-      badges += `
-        <span class="badge badge-orange">
-          <i class="fa-solid fa-location-dot"></i>
-          Proche
-        </span>
-      `;
-    }
-  
-    if (CONFIG.sortBy === "both" && !isBestForCurrentFilter) {
-      const priceGap = s.price - cheapest;
+      const isClosest = s.distance === closest;
+      const isBestForCurrentFilter = s.id === bestStationId;
     
-      if (priceGap <= 0.05) {
-        badges += `
-          <span class="badge badge-orange">
-            <i class="fa-solid fa-scale-balanced"></i>
-            Bon compromis
-          </span>
-        `;
+      const mapsUrl =
+        `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}&travelmode=driving`;
+    
+      let badges = "";
+      let priceClass = "expensive";
+      let priceExtra = "";
+      
+      const priceGap = s.price - cheapest;
+      
+      if (isBestForCurrentFilter) {
+        priceClass = "";
+      
+        if (CONFIG.sortBy === "price") {
+          badges += `
+            <span class="badge badge-green">
+              <i class="fa-solid fa-check"></i>
+              Meilleur prix
+            </span>
+          `;
+          priceExtra = `<span class="price-top">Top prix</span>`;
+        } else if (CONFIG.sortBy === "distance") {
+          badges += `
+            <span class="badge badge-green">
+              <i class="fa-solid fa-location-arrow"></i>
+              Plus proche
+            </span>
+          `;
+          priceExtra = `<span class="price-top">Top distance</span>`;
+        } else {
+          badges += `
+            <span class="badge badge-green">
+              <i class="fa-solid fa-scale-balanced"></i>
+              Meilleur compromis
+            </span>
+          `;
+          priceExtra = `<span class="price-top">Top mix</span>`;
+        }
       } else {
-        badges += `
-          <span class="badge badge-red">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            Compromis faible
-          </span>
-        `;
+        if (priceGap <= 0.05) {
+          priceClass = "medium";
+        } else {
+          priceClass = "expensive";
+        }
+      
+        if (isCheapest) {
+          badges += `
+            <span class="badge badge-orange">
+              <i class="fa-solid fa-euro-sign"></i>
+              Bon prix
+            </span>
+          `;
+        }
+      
+        if (isClosest) {
+          badges += `
+            <span class="badge badge-orange">
+              <i class="fa-solid fa-location-dot"></i>
+              Proche
+            </span>
+          `;
+        }
+      
+        if (CONFIG.sortBy === "both" && !isCheapest && !isClosest) {
+          if (priceClass === "medium") {
+            badges += `
+              <span class="badge badge-orange">
+                <i class="fa-solid fa-scale-balanced"></i>
+                Compromis moyen
+              </span>
+            `;
+          } else {
+            badges += `
+              <span class="badge badge-red">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Compromis faible
+              </span>
+            `;
+          }
+        }
+      
+        if (priceClass === "medium") {
+          priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
+        } else {
+          priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
+        }
       }
-    }
-  
-    const priceGap = s.price - cheapest;
-
-    if (priceGap <= 0.05) {
-      priceClass = "medium";
-    } else {
-      priceClass = "expensive";
-    }
-  
-    priceExtra = `<span class="price-delta">+${((s.price - cheapest) * 100).toFixed(1)} c</span>`;
-  }
 
       return `
         <article class="station-card" style="animation-delay:${index * 0.04}s">
