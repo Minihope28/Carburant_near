@@ -481,17 +481,16 @@ function renderStations() {
     }
   
     if (CONFIG.sortBy === "both" && !isBestForCurrentFilter) {
+      const priceGap = s.price - cheapest;
     
-      if (priceClass === "medium") {
+      if (priceGap <= 0.05) {
         badges += `
           <span class="badge badge-orange">
             <i class="fa-solid fa-scale-balanced"></i>
             Bon compromis
           </span>
         `;
-      }
-    
-      if (priceClass === "expensive") {
+      } else {
         badges += `
           <span class="badge badge-red">
             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -499,11 +498,14 @@ function renderStations() {
           </span>
         `;
       }
-    
     }
   
-    if (s.price <= cheapest * 1.03) {
+    const priceGap = s.price - cheapest;
+
+    if (priceGap <= 0.05) {
       priceClass = "medium";
+    } else {
+      priceClass = "expensive";
     }
   
     priceExtra = `<span class="price-delta">+${((s.price - cheapest) * 100).toFixed(1)} c</span>`;
