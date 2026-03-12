@@ -1057,3 +1057,45 @@ input {
     font-size: 0.78rem;
   }
 }
+
+/* Morocco style*/
+.morocco-source-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(240, 180, 75, 0.1);
+  border: 1px solid rgba(240, 180, 75, 0.18);
+  color: #ffd089;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.morocco-grid {
+  margin-bottom: 14px;
+}
+
+.morocco-brands-block {
+  margin-top: 6px;
+}
+
+.morocco-brands-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.brand-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
