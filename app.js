@@ -146,6 +146,7 @@ function setupAutocomplete() {
 
   input.addEventListener("focus", () => {
     const searchPanel = document.querySelector(".search-panel");
+
     if (searchPanel) {
       setTimeout(() => {
         searchPanel.scrollIntoView({
@@ -154,6 +155,10 @@ function setupAutocomplete() {
         });
       }, 250);
     }
+
+    setTimeout(() => {
+      positionSuggestionsPortal();
+    }, 350);
   });
 
   input.addEventListener("input", (e) => {
@@ -191,8 +196,21 @@ function setupAutocomplete() {
     }
   });
 
-  window.addEventListener("resize", positionSuggestionsPortal);
+  window.addEventListener("resize", () => {
+    setTimeout(positionSuggestionsPortal, 50);
+  });
+
   window.addEventListener("scroll", positionSuggestionsPortal, true);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => {
+      setTimeout(positionSuggestionsPortal, 50);
+    });
+
+    window.visualViewport.addEventListener("scroll", () => {
+      setTimeout(positionSuggestionsPortal, 50);
+    });
+  }
 }
 
 async function fetchSuggestionsFrance(query) {
@@ -294,14 +312,24 @@ function positionSuggestionsPortal() {
   if (!portal || !input || portal.classList.contains("hidden")) return;
 
   const rect = input.getBoundingClientRect();
-  const viewportHeight = window.innerHeight;
-  const spaceBelow = viewportHeight - rect.bottom;
-  const desiredHeight = Math.min(320, Math.max(180, spaceBelow - 16));
+
+  const viewportHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  const viewportOffsetTop = window.visualViewport
+    ? window.visualViewport.offsetTop
+    : 0;
+
+  const safeTop = rect.bottom + 8;
+  const availableBelow = viewportHeight + viewportOffsetTop - safeTop - 12;
+
+  const maxHeight = Math.max(120, Math.min(260, availableBelow));
 
   portal.style.left = `${Math.max(12, rect.left)}px`;
-  portal.style.top = `${rect.bottom + 8}px`;
+  portal.style.top = `${safeTop}px`;
   portal.style.width = `${rect.width}px`;
-  portal.style.maxHeight = `${desiredHeight}px`;
+  portal.style.maxHeight = `${maxHeight}px`;
 }
 
 async function selectSuggestion(index) {
