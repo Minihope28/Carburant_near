@@ -87,8 +87,8 @@ function selectCountry(country) {
   }
 
   if (country === "MA") {
-    if (moroccoPanel) moroccoPanel.classList.remove("hidden");
-
+    if (moroccoPanel) moroccoPanel.classList.add("hidden");
+  
     if (addressInput) {
       addressInput.placeholder = "Ex : Maarif Casablanca, Rabat Agdal, Tanger centre...";
       addressInput.value = "";
