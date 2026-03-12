@@ -519,11 +519,7 @@ function renderStations() {
               <div class="price-tag ${priceClass}">
                 ${s.price.toFixed(3)}€
               </div>
-              ${
-                isCheapest
-                  ? `<span class="price-top">Top prix</span>`
-                  : `<span class="price-delta">+${((s.price - cheapest) * 100).toFixed(1)} c</span>`
-              }
+              ${priceExtra}
             </div>
           </div>
 
