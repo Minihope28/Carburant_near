@@ -336,19 +336,31 @@ function sortStations() {
   }
 
   if (CONFIG.sortBy === "both") {
-    const minPrice = Math.min(...stations.map((s) => s.price));
-    const maxPrice = Math.max(...stations.map((s) => s.price));
-    const maxDistance = Math.max(...stations.map((s) => s.distance), 0.1);
+    const MIX_PRICE_TOLERANCE = 0.02; // 2 centimes
+    const cheapest = Math.min(...stations.map((s) => s.price));
 
-    const priceRange = maxPrice - minPrice || 1;
+    stations.sort((a, b) => {
+      const aCloseToBest = a.price - cheapest <= MIX_PRICE_TOLERANCE;
+      const bCloseToBest = b.price - cheapest <= MIX_PRICE_TOLERANCE;
 
-    stations.forEach((s) => {
-      const priceScore = (s.price - minPrice) / priceRange;
-      const distanceScore = s.distance / maxDistance;
-      s.mixScore = priceScore * 0.6 + distanceScore * 0.4;
+      // Si les deux sont proches du meilleur prix, on prend le plus proche
+      if (aCloseToBest && bCloseToBest) {
+        return a.distance - b.distance;
+      }
+
+      // Si un seul est proche du meilleur prix, il passe devant
+      if (aCloseToBest && !bCloseToBest) return -1;
+      if (!aCloseToBest && bCloseToBest) return 1;
+
+      // Sinon on trie d'abord par prix, puis par distance
+      if (a.price !== b.price) {
+        return a.price - b.price;
+      }
+
+      return a.distance - b.distance;
     });
 
-    stations.sort((a, b) => a.mixScore - b.mixScore);
+    return;
   }
 }
 
