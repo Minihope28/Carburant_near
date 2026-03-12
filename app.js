@@ -336,31 +336,48 @@ function sortStations() {
   }
 
   if (CONFIG.sortBy === "both") {
-    const MIX_PRICE_TOLERANCE = 0.02; // 2 centimes
-    const cheapest = Math.min(...stations.map((s) => s.price));
+    const minPrice = Math.min(...stations.map((s) => s.price));
+    const maxPrice = Math.max(...stations.map((s) => s.price));
+    const minDistance = Math.min(...stations.map((s) => s.distance));
+    const maxDistance = Math.max(...stations.map((s) => s.distance));
 
-    stations.sort((a, b) => {
-      const aCloseToBest = a.price - cheapest <= MIX_PRICE_TOLERANCE;
-      const bCloseToBest = b.price - cheapest <= MIX_PRICE_TOLERANCE;
+    const priceRange = maxPrice - minPrice || 0.001;
+    const distanceRange = maxDistance - minDistance || 0.001;
 
-      // Si les deux sont proches du meilleur prix, on prend le plus proche
-      if (aCloseToBest && bCloseToBest) {
-        return a.distance - b.distance;
+    stations.forEach((s) => {
+      // 1) score prix normalisé (0 à 1, plus haut = mieux)
+      const normalizedPrice =
+        1 - (s.price - minPrice) / priceRange;
+
+      // 2) score distance normalisé (0 à 1, plus haut = mieux)
+      const normalizedDistance =
+        1 - (s.distance - minDistance) / distanceRange;
+
+      // 3) pénalité surcoût par rapport au meilleur prix
+      const priceGap = s.price - minPrice;
+
+      let priceGapPenalty = 1;
+      if (priceGap <= 0.02) {
+        priceGapPenalty = 1; // très bon
+      } else if (priceGap <= 0.05) {
+        priceGapPenalty = 0.75; // acceptable
+      } else if (priceGap <= 0.10) {
+        priceGapPenalty = 0.4; // bof
+      } else {
+        priceGapPenalty = 0.1; // mauvais
       }
 
-      // Si un seul est proche du meilleur prix, il passe devant
-      if (aCloseToBest && !bCloseToBest) return -1;
-      if (!aCloseToBest && bCloseToBest) return 1;
+      // score final sur 100
+      s.smartScore =
+        normalizedPrice * 45 +
+        normalizedDistance * 30 +
+        priceGapPenalty * 25;
 
-      // Sinon on trie d'abord par prix, puis par distance
-      if (a.price !== b.price) {
-        return a.price - b.price;
-      }
-
-      return a.distance - b.distance;
+      // on garde aussi l'écart prix utile pour l'UI
+      s.priceGap = priceGap;
     });
 
-    return;
+    stations.sort((a, b) => b.smartScore - a.smartScore);
   }
 }
 
@@ -425,19 +442,20 @@ function renderStations() {
       const isCheapest = s.price === cheapest;
       const isClosest = s.distance === closest;
       const isBestForCurrentFilter = s.id === bestStationId;
-    
+
       const mapsUrl =
         `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}&travelmode=driving`;
-    
+
       let badges = "";
       let priceClass = "expensive";
       let priceExtra = "";
-      
-      const priceGap = s.price - cheapest;
-      
+
+      const priceGap =
+        typeof s.priceGap === "number" ? s.priceGap : s.price - cheapest;
+
       if (isBestForCurrentFilter) {
         priceClass = "";
-      
+
         if (CONFIG.sortBy === "price") {
           badges += `
             <span class="badge badge-green">
@@ -464,14 +482,14 @@ function renderStations() {
           priceExtra = `<span class="price-top">Top mix</span>`;
         }
       } else {
-        // Couleur prix
+        // Couleur du prix
         if (priceGap <= 0.05) {
           priceClass = "medium";
         } else {
           priceClass = "expensive";
         }
-      
-        // Badge prix
+
+        // Badges prix / distance
         if (isCheapest) {
           badges += `
             <span class="badge badge-green">
@@ -481,8 +499,6 @@ function renderStations() {
           `;
         }
 
-      
-        // Badge distance
         if (isClosest) {
           badges += `
             <span class="badge badge-green">
@@ -491,10 +507,10 @@ function renderStations() {
             </span>
           `;
         }
-      
-        // Badge compromis en mode mix
+
+        // Badge compromis intelligent basé sur smartScore
         if (CONFIG.sortBy === "both") {
-          if (priceClass === "medium") {
+          if (s.smartScore >= 65) {
             badges += `
               <span class="badge badge-orange">
                 <i class="fa-solid fa-scale-balanced"></i>
@@ -510,7 +526,7 @@ function renderStations() {
             `;
           }
         }
-      
+
         priceExtra = `<span class="price-delta">+${(priceGap * 100).toFixed(1)} c</span>`;
       }
 
@@ -530,6 +546,16 @@ function renderStations() {
                   <i class="fa-solid fa-euro-sign"></i>
                   ${s.price.toFixed(3)}€
                 </span>
+                ${
+                  CONFIG.sortBy === "both" && typeof s.smartScore === "number"
+                    ? `
+                  <span class="card-meta-item">
+                    <i class="fa-solid fa-star"></i>
+                    Score ${s.smartScore.toFixed(0)}
+                  </span>
+                `
+                    : ""
+                }
               </div>
             </div>
 
