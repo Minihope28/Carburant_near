@@ -730,11 +730,6 @@ input {
   border: 1px solid rgba(243, 179, 61, 0.2);
 }
 
-.badge-orange {
-  background: rgba(243, 179, 61, 0.12);
-  color: #ffd07c;
-  border: 1px solid rgba(243, 179, 61, 0.18);
-}
 
 .card-address {
   margin: 0 0 10px;
