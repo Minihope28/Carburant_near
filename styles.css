@@ -1088,6 +1088,10 @@ input {
   margin-top: 10px;
 }
 
+#moroccoInfoPanel {
+  display: none !important;
+}
+
 .brand-pill {
   display: inline-flex;
   align-items: center;
